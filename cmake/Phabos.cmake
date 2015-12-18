@@ -1,0 +1,11 @@
+function(phabos_add_srcs)
+  foreach(arg ${ARGV})
+    set_property(GLOBAL APPEND PROPERTY _PHABOS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${arg})
+  endforeach()
+endfunction()
+
+function(phabos_add_includes)
+  foreach(arg ${ARGV})
+    set_property(GLOBAL APPEND PROPERTY _PHABOS_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/${arg})
+  endforeach()
+endfunction()
