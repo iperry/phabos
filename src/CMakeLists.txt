@@ -1,13 +1,11 @@
 include(ExternalProject)
 
+# Set include paths
 set_property(GLOBAL APPEND PROPERTY _PHABOS_INCLUDES ${CMAKE_CURRENT_BINARY_DIR})
 phabos_add_includes(.)
 phabos_add_includes(include/)
 
-add_subdirectory(arch/)
-
 set(KCONFIG_DIR ${PROJECT_BINARY_DIR}/kconfig)
-set(KCONFIG_HELPER ${PROJECT_SOURCE_DIR}/cmake/kconfig.sh)
 set(KCONFIG_CONF_PATH ${KCONFIG_DIR}/bin/kconfig-conf)
 set(KCONFIG_MCONF_PATH ${KCONFIG_DIR}/bin/kconfig-mconf)
 message("KCONFIG_DIR: ${KCONFIG_DIR}")
@@ -38,9 +36,8 @@ add_custom_target(menuconfig
     --prune-empty-dirs ${CMAKE_CURRENT_SOURCE_DIR}/ ${KCONFIG_DIR}
   COMMAND ARCH=arm ${KCONFIG_MCONF_PATH} Kconfig)
 
-set(CONFIGS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/arch/arm/configs)
-
 # Find all defconfigs and make custom targets for them
+set(CONFIGS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/arch/arm/configs)
 file(GLOB DEFCONFIGS RELATIVE ${CONFIGS_DIR} "${CONFIGS_DIR}/*_defconfig")
 message("CONFIGS_DIR: ${CONFIGS_DIR}")
 message("DEFCONFIGS: ${DEFCONFIGS}")
@@ -51,16 +48,24 @@ foreach(config ${DEFCONFIGS})
     COMMAND mkdir -p ${KCONFIG_DIR} && cp ${CONFIGS_DIR}/${config} ${KCONFIG_DIR}/.config)
 endforeach()
 
-# Generate config.h from the Kconfig file
+# Generate config.h and config.cmake from the Kconfig file
+#add_custom_target(generate-configs
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config.h
-  COMMAND echo "Generating config.h"
-  COMMAND ${PROJECT_SOURCE_DIR}/cmake/generate-config.sh ${KCONFIG_DIR}/.config
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config.h ${CMAKE_BINARY_DIR}/config.cmake
+  COMMAND ${CMAKE_COMMAND} -E env CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR} ${PROJECT_SOURCE_DIR}/cmake/generate-config.sh ${KCONFIG_DIR}/.config
   DEPENDS ${KCONFIG_DIR}/.config)
+
+set(CMAKE_CONFIG ${CMAKE_BINARY_DIR}/config.cmake)
+if(NOT EXISTS ${CMAKE_CONFIG})
+  file(WRITE ${CMAKE_CONFIG} "")
+endif()
+include(${CMAKE_BINARY_DIR}/config.cmake)
+add_subdirectory(arch/)
 
 # Print accumulated values
 get_property(PHABOS_SRCS GLOBAL PROPERTY _PHABOS_SRCS)
 get_property(PHABOS_INCLUDES GLOBAL PROPERTY _PHABOS_INCLUDES)
+
 message("PHABOS_CFLAGS: ${PHABOS_CFLAGS}")
 message("PHABOS_SRCS: ${PHABOS_SRCS}")
 message("PHABOS_INCLUDES: ${PHABOS_INCLUDES}")
@@ -71,5 +76,6 @@ SET(CMAKE_C_LINK_EXECUTABLE "clang ${CMAKE_C_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} <O
 
 # Build executable
 add_executable(phabos.elf ${CMAKE_CURRENT_BINARY_DIR}/config.h ${PHABOS_SRCS})
+add_dependencies(phabos.elf kconfig-frontends)
 include_directories(phabos.elf ${CMAKE_SOURCE_DIR} ${PHABOS_INCLUDES})
 
