@@ -12,8 +12,7 @@ include(Phabos)
 set(PHABOS_CFLAGS
   -target arm-none-eabi
   -march=armv7-m
-  -mthumb
-  -mcpu=cortex-m3
+  -mtune=cortex-m3
   -nostdlib)
 string(REPLACE ";" " " PHABOS_CFLAGS "${PHABOS_CFLAGS}")
 set(CMAKE_C_FLAGS ${PHABOS_CFLAGS})
