@@ -49,17 +49,19 @@ foreach(config ${DEFCONFIGS})
 endforeach()
 
 # Generate config.h and config.cmake from the Kconfig file
-#add_custom_target(generate-configs
-add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config.h ${CMAKE_BINARY_DIR}/config.cmake
+set(CONFIG_CMAKE ${CMAKE_BINARY_DIR}/config.cmake)
+execute_process(
   COMMAND ${CMAKE_COMMAND} -E env CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR} ${PROJECT_SOURCE_DIR}/cmake/generate-config.sh ${KCONFIG_DIR}/.config
-  DEPENDS ${KCONFIG_DIR}/.config)
+  )
 
-set(CMAKE_CONFIG ${CMAKE_BINARY_DIR}/config.cmake)
-if(NOT EXISTS ${CMAKE_CONFIG})
-  file(WRITE ${CMAKE_CONFIG} "")
+if(NOT EXISTS ${CONFIG_CMAKE})
+  file(WRITE ${CONFIG_CMAKE} "")
 endif()
-include(${CMAKE_BINARY_DIR}/config.cmake)
+# Hack to retrigger configuration on .config change
+configure_file("${KCONFIG_DIR}/.config" "${CMAKE_BINARY_DIR}/config-stamp")
+include(${CONFIG_CMAKE})
+
+# Add source directories here
 add_subdirectory(arch/)
 
 # Print accumulated values
@@ -71,8 +73,8 @@ message("PHABOS_SRCS: ${PHABOS_SRCS}")
 message("PHABOS_INCLUDES: ${PHABOS_INCLUDES}")
 
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
-set(CMAKE_EXE_LINKER_FLAGS "-nostartfiles -nostdlib -T/home/perry/src/phabos/src/arch/arm/mach-tsb/tsb-es2.ld")
-SET(CMAKE_C_LINK_EXECUTABLE "clang ${CMAKE_C_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} <OBJECTS> -o phabos.bin")
+set(CMAKE_EXE_LINKER_FLAGS "-nostartfiles -nostdlib -T/Users/perry/src/phabos/src/arch/arm/mach-tsb/tsb-es2.ld")
+SET(CMAKE_C_LINK_EXECUTABLE "arm-none-eabi-ld ${CMAKE_EXE_LINKER_FLAGS} <OBJECTS> -o phabos.bin")
 
 # Build executable
 add_executable(phabos.elf ${CMAKE_CURRENT_BINARY_DIR}/config.h ${PHABOS_SRCS})

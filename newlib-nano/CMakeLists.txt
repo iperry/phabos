@@ -11,6 +11,7 @@ ExternalProject_Add(newlib-nano
     CONFIGURE_COMMAND ../newlib-nano/newlib/configure --prefix=${NEWLIB_NANODIR}
       --build=arm-none-eabi --disable-newlib-supplied-syscalls
       CC=clang
+      CC_FOR_BUILD=clang
       "CFLAGS=-target arm-none-eabi -march=armv7-m -mthumb -mcpu=cortex-m3"
     LOG_DOWNLOAD 1
     LOG_CONFIGURE 1
